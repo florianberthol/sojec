@@ -13,8 +13,9 @@ class PokemonManager
     public function __construct(private SluggerInterface $slugger, private EntityManagerInterface $entityManager)
     {}
 
-    public function createPokemon(array $pokemonList): void
+    private function createPokemons(array $pokemonList): array
     {
+        $pokemons = [];
         foreach ($pokemonList as $pokemonData) {
             $pokemon = new Pokemon();
             $pokemon->setPokemonId($pokemonData['']);
@@ -31,15 +32,34 @@ class PokemonManager
             $pokemon->setGeneration($pokemonData['generation']);
             $pokemon->setLegendary($this->strToBool($pokemonData['legendary']));
 
+            $pokemons[] = $pokemon;
+        }
+
+        return $pokemons;
+    }
+
+    private function savePokemons(array $pokemons)
+    {
+        if (!empty($pokemons)) {
+            $this->clearPokemons();
+        }
+
+        foreach ($pokemons as $pokemon) {
             $this->entityManager->persist($pokemon);
             $this->entityManager->flush();
         }
     }
 
+    private function clearPokemons(): void
+    {
+        $this->entityManager->getRepository(Pokemon::class)->deleteAll();
+    }
+
     public function createPokemonFromCSV(string $filePath)
     {
         $data = $this->readCsv($filePath);
-        $this->createPokemon($data);
+        $pokemons = $this->createPokemons($data);
+        $this->savePokemons($pokemons);
     }
 
     public function updatePokemonType(array $data, Pokemon $pokemon)
