@@ -14,6 +14,7 @@ use App\Controller\UpdatePokemonController;
 use App\Repository\PokemonRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: PokemonRepository::class)]
 #[ApiResource(
@@ -21,7 +22,9 @@ use Symfony\Component\Serializer\Annotation\Groups;
         new GetCollection(
             uriTemplate: '/',
         ), new Patch(
-            uriTemplate: '/{id}', controller: UpdatePokemonController::class, hydraContext: ['write'],
+            uriTemplate: '/{id}',
+            controller: UpdatePokemonController::class,
+            hydraContext: ['write'],
             security: "is_granted('EDIT', object)"
         ), new Delete(
             uriTemplate: '/{id}',
@@ -52,11 +55,13 @@ class Pokemon
 
     #[ORM\Column(length: 255)]
     #[Groups(['read', 'write'])]
+    #[Assert\NotBlank()]
     private ?string $name = null;
 
     #[ORM\ManyToOne(inversedBy: 'pokemonType1')]
     #[ORM\JoinColumn(nullable: false)]
     #[Groups(['read', 'write'])]
+    #[Assert\NotNull()]
     private ?Type $type1 = null;
 
     #[ORM\ManyToOne(inversedBy: 'pokemonType2')]
@@ -93,10 +98,12 @@ class Pokemon
 
     #[ORM\Column]
     #[Groups(['read', 'write'])]
+    #[Assert\NotBlank()]
     private ?int $generation = null;
 
     #[ORM\Column]
     #[Groups(['read', 'write'])]
+    #[Assert\NotNull()]
     private ?bool $legendary = null;
 
     public function getId(): ?int

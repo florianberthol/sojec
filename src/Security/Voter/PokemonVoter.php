@@ -18,6 +18,9 @@ class PokemonVoter extends Voter
             && $subject instanceof Pokemon;
     }
 
+    /**
+     * @param Pokemon $subject
+     */
     protected function voteOnAttribute(string $attribute, mixed $subject, TokenInterface $token): bool
     {
         $user = $token->getUser();
@@ -26,7 +29,7 @@ class PokemonVoter extends Voter
             return false;
         }
 
-        if ($subject instanceof Pokemon && !$subject->isLegendary()) {
+        if (!$subject->isLegendary()) {
             return true;
         }
 
