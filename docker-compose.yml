@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+###> doctrine/doctrine-bundle ###
+  mysql:
+    image: mariadb:10
+    environment:
+      MYSQL_DB: 'test'
+      MYSQL_ROOT_PASSWORD: 'test'
+
+volumes:
+###> doctrine/doctrine-bundle ###
+  database_data:
+###< doctrine/doctrine-bundle ###
