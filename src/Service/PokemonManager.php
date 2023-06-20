@@ -5,13 +5,32 @@ namespace App\Service;
 use App\Entity\Pokemon;
 use App\Entity\Type;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\String\Slugger\AsciiSlugger;
 use Symfony\Component\String\Slugger\SluggerInterface;
 
 class PokemonManager
 {
-    public function __construct(private SluggerInterface $slugger, private EntityManagerInterface $entityManager)
+    public function __construct(private Slugger $slugger, private EntityManagerInterface $entityManager)
     {}
+
+    public function createPokemonFromCSV(string $filePath)
+    {
+        $data = $this->readCsv($filePath);
+        $pokemons = $this->createPokemons($data);
+        $this->savePokemons($pokemons);
+    }
+
+    public function updatePokemonType(array $data, Pokemon $pokemon)
+    {
+        $typeManager = $this->entityManager->getRepository(Type::class);
+        if (isset($data['type1']) && $type1 = $typeManager->find($data['type1'])) {
+            $pokemon->setType1($type1);
+        }
+        if (isset($data['type2']) && $type2 = $typeManager->find($data['type2'])) {
+            $pokemon->setType2($type2);
+        }
+
+        $this->entityManager->flush();
+    }
 
     private function createPokemons(array $pokemonList): array
     {
@@ -55,26 +74,6 @@ class PokemonManager
         $this->entityManager->getRepository(Pokemon::class)->deleteAll();
     }
 
-    public function createPokemonFromCSV(string $filePath)
-    {
-        $data = $this->readCsv($filePath);
-        $pokemons = $this->createPokemons($data);
-        $this->savePokemons($pokemons);
-    }
-
-    public function updatePokemonType(array $data, Pokemon $pokemon)
-    {
-        $typeManager = $this->entityManager->getRepository(Type::class);
-        if (isset($data['type1']) && $type1 = $typeManager->find($data['type1'])) {
-            $pokemon->setType1($type1);
-        }
-        if (isset($data['type2']) && $type2 = $typeManager->find($data['type2'])) {
-            $pokemon->setType2($type2);
-        }
-
-        $this->entityManager->flush();
-    }
-
     private function readCsv(string $filePath): array
     {
         $fileResource = fopen($filePath, 'r');
@@ -98,12 +97,14 @@ class PokemonManager
         $type = $typeRepo->findOneBySlug(
             $this->slugger->slug($name)
         );
+
         if (!$type && !empty($name)) {
             $type = new Type();
             $type->setName($name);
-            $type->setSlug($this->slugger->slug($name)->folded()->toString());
+            $type->setSlug($this->slugger->slug($name));
 
             $this->entityManager->persist($type);
+            $this->entityManager->flush();
         }
 
         return $type;
@@ -112,7 +113,7 @@ class PokemonManager
     private function slugHeader(array $data): array
     {
         foreach ($data as &$datum) {
-            $datum = $this->slugger->slug($datum)->folded()->toString();
+            $datum = $this->slugger->slug($datum);
         }
 
         return $data;
@@ -120,7 +121,7 @@ class PokemonManager
 
     private function strToBool(string $str): bool
     {
-        $str = $this->slugger->slug($str)->folded()->toString();
+        $str = $this->slugger->slug($str);
         if ($str === 'true') {
             return true;
         }
