@@ -2,12 +2,13 @@
 
 namespace App\Tests;
 
+use App\Entity\Pokemon;
+use App\Entity\Type;
+use App\Repository\PokemonRepository;
 use App\Service\PokemonManager;
 use App\Service\Slugger;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
-use Symfony\Component\String\AbstractUnicodeString;
-use Symfony\Component\String\Slugger\SluggerInterface;
 
 class PokemonManagerTest extends TestCase
 {
@@ -24,6 +25,97 @@ class PokemonManagerTest extends TestCase
         $this->em = $this->getMockBuilder(EntityManagerInterface::class)
             ->disableOriginalConstructor()
             ->getMock();
+    }
+
+    public function testCreatePokemons(): void
+    {
+        $pokemonRepository = $this->getMockBuilder(PokemonRepository::class)
+            ->disableOriginalConstructor()
+            ->addMethods(['findOneBySlug'])
+            ->getMock();
+
+        $pokemonRepository->expects($this->exactly(4))
+            ->method('findOneBySlug')
+            ->willReturnOnConsecutiveCalls(
+                $this->createTypeEntity('grass'),
+                $this->createTypeEntity('poison'),
+                $this->createTypeEntity('grass'),
+                $this->createTypeEntity('poison'),
+            );
+
+        $this->em->expects($this->exactly(4))
+            ->method('getRepository')
+            ->willReturn($pokemonRepository);
+
+        $reflexionPokemonManager = new \ReflectionClass(PokemonManager::class);
+        $createPokemons = $reflexionPokemonManager->getMethod('createPokemons');
+        $createPokemons->setAccessible(true);
+
+        $pokemonManager = new PokemonManager($this->slugger, $this->em);
+
+        $data = [
+            [
+                '' => '1',
+                'name' => 'Bulbasaur',
+                'type-1' => 'Grass',
+                'type-2' => 'Poison',
+                'total' => 318,
+                'hp' => 45,
+                'attack' => 49,
+                'defense' => 49,
+                'sp-atk' => 65,
+                'sp-def' => 65,
+                'speed' => 45,
+                'generation' => 1,
+                'legendary' => 'False',
+            ], [
+                '' => '2',
+                'name' => 'Ivysaur',
+                'type-1' => 'Grass',
+                'type-2' => 'Poison',
+                'total' => 405,
+                'hp' => 60,
+                'attack' => 62,
+                'defense' => 63,
+                'sp-atk' => 80,
+                'sp-def' => 80,
+                'speed' => 60,
+                'generation' => 1,
+                'legendary' => 'False',
+            ]
+        ];
+
+        /** @var array<Pokemon> $result */
+        $result = $createPokemons->invokeArgs($pokemonManager, [$data]);
+        $this->assertEquals(2, count($result));
+        $this->assertInstanceOf(Pokemon::class, $result[0]);
+        $this->assertInstanceOf(Pokemon::class, $result[1]);
+        $this->assertInstanceOf(Type::class, $result[0]->getType1());
+        $this->assertInstanceOf(Type::class, $result[1]->getType2());
+        $this->assertEquals('Bulbasaur', $result[0]->getName());
+        $this->assertEquals('Ivysaur', $result[1]->getName());
+        $this->assertEquals(318, $result[0]->getTotal());
+        $this->assertEquals(405, $result[1]->getTotal());
+        $this->assertEquals(45, $result[0]->getHp());
+        $this->assertEquals(60, $result[1]->getHp());
+        $this->assertEquals(49, $result[0]->getAttack());
+        $this->assertEquals(62, $result[1]->getAttack());
+        $this->assertEquals(49, $result[0]->getDefense());
+        $this->assertEquals(63, $result[1]->getDefense());
+        $this->assertEquals(65, $result[0]->getSpAtk());
+        $this->assertEquals(80, $result[1]->getSpAtk());
+        $this->assertEquals(65, $result[0]->getSpDef());
+        $this->assertEquals(80, $result[1]->getSpDef());
+        $this->assertEquals(45, $result[0]->getSpeed());
+        $this->assertEquals(60, $result[1]->getSpeed());
+        $this->assertEquals(1, $result[0]->getGeneration());
+        $this->assertEquals(1, $result[1]->getGeneration());
+        $this->assertFalse($result[0]->isLegendary());
+        $this->assertFalse($result[1]->isLegendary());
+        $this->assertEquals('grass', $result[0]->getType1()->getName());
+        $this->assertEquals('poison', $result[0]->getType2()->getName());
+        $this->assertEquals('grass', $result[1]->getType1()->getName());
+        $this->assertEquals('poison', $result[1]->getType2()->getName());
     }
 
     public function testReadCsv(): void
@@ -67,5 +159,14 @@ class PokemonManagerTest extends TestCase
         $this->assertEquals(60, $result[1]['speed']);
         $this->assertEquals(1, $result[1]['generation']);
         $this->assertEquals('False', $result[1]['legendary']);
+    }
+
+    private function createTypeEntity(string $name): Type
+    {
+        $type = new Type();
+        $type->setSlug($name);
+        $type->setName($name);
+
+        return $type;
     }
 }

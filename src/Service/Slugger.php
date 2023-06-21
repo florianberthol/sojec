@@ -2,7 +2,6 @@
 
 namespace App\Service;
 
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\String\Slugger\SluggerInterface;
 
 class Slugger
