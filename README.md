@@ -2,18 +2,21 @@ Instalation
 ============
 
 ```
-composer install
+make init
 ```
 
 Lancer le projet
 =================
-- Server web
+
 ```
-symfony server:start
+make start
 ```
-- Server DB
+
+Arêter le projet
+=================
+
 ```
-docker-compose up -d 
+make stop
 ```
 
 Importer des Pokemons
